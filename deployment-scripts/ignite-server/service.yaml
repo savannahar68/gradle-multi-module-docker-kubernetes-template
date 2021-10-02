@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ignite-service
+  namespace: ignite
+  labels:
+    app: ignite
+spec:
+  type: LoadBalancer
+  ports:
+    - name: rest
+      port: 8080
+      targetPort: 8080
+    - name: thinclients
+      port: 10800
+      targetPort: 10800
+    - name: sql
+      port: 10900
+      targetPort: 10900
+    - name: discoveryspi
+      port: 47500
+      targetPort: 47500
+    - name: communicationspi
+      port: 47100
+      targetPort: 47100
+  selector:
+    app: ignite

@@ -1,0 +1,85 @@
+# An example of a Kubernetes configuration for pod deployment.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  # Cluster name.
+  name: ignite
+  namespace: ignite
+spec:
+  # The initial number of pods to be started by Kubernetes.
+  replicas: 1
+  serviceName: ignite
+  selector:
+    matchLabels:
+      app: ignite
+  template:
+    metadata:
+      labels:
+        app: ignite
+    spec:
+      serviceAccountName: ignite
+      terminationGracePeriodSeconds: 60000
+      containers:
+        # Custom pod name.
+      - name: ignite-node
+        image: apacheignite/ignite:2.10.0
+        env:
+        - name: OPTION_LIBS
+          value: ignite-kubernetes,ignite-rest-http
+        - name: CONFIG_URI
+          value: file:///ignite/config/node-configuration.xml
+        - name: JVM_OPTS
+          value: "-DIGNITE_WAL_MMAP=false"
+        resources:
+          limits:
+            cpu: 500m
+            memory: 2Gi
+          requests:
+            cpu: 500m
+            memory: 2Gi
+        ports:
+        # Ports to open.
+        - containerPort: 47100 # communication SPI port
+        - containerPort: 47500 # discovery SPI port
+        - containerPort: 49112 # JMX port
+        - containerPort: 10800 # thin clients/JDBC driver port
+        - containerPort: 10900 # sql driver port
+        - containerPort: 8080 # REST API
+        volumeMounts:
+        - mountPath: /ignite/config
+          name: config-vol
+        - mountPath: /ignite/work
+          name: work-vol
+        - mountPath: /ignite/wal
+          name: wal-vol
+        - mountPath: /ignite/walarchive
+          name: walarchive-vol
+      volumes:
+      - name: config-vol
+        configMap:
+          name: ignite-config
+  volumeClaimTemplates:
+  - metadata:
+      name: work-vol
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "ignite-persistence-storage-class"
+      resources:
+        requests:
+          storage: "250Gi" # make sure to provide enought space for your application data
+  - metadata:
+      name: wal-vol
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "ignite-wal-storage-class"
+      resources:
+        requests:
+          storage: "10Gi"
+  - metadata:
+      name: walarchive-vol
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "ignite-wal-storage-class"
+      resources:
+        requests:
+          storage: "10Gi"

@@ -1,0 +1,52 @@
+plugins {
+    id 'java'
+    id 'com.palantir.git-version' version '0.11.0'
+    id 'org.jetbrains.kotlin.jvm' version '1.5.0'
+    id 'net.ltgt.apt' version '0.21'
+    id 'net.ltgt.apt-idea' version '0.21'
+}
+
+repositories {
+    mavenCentral()
+}
+
+task rawVersion() {
+    doLast {
+        print(versionDetails().gitHash)
+    }
+}
+
+ext {
+    ecrRegistry = "${System.env.ECR_ENDPOINT}"
+}
+
+
+allprojects {
+
+    apply plugin: 'java'
+    apply plugin: 'idea'
+    apply plugin: 'maven-publish'
+    apply plugin: 'com.palantir.git-version'
+
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+
+    group 'com.example.org.gradle-multi-module-docker-kubernetes-template'
+    version "1.0.0-${gitVersion()}-SNAPSHOT"
+
+    compileKotlin {
+        kotlinOptions {
+            jvmTarget = "11"
+        }
+    }
+    compileTestKotlin {
+        kotlinOptions {
+            jvmTarget = "11"
+        }
+    }
+}
+
+wrapper{
+    gradleVersion = '7.0'
+    distributionType = Wrapper.DistributionType.BIN
+}

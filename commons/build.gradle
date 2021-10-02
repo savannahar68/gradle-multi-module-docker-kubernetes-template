@@ -1,0 +1,32 @@
+import org.springframework.boot.gradle.plugin.SpringBootPlugin
+
+plugins {
+    id 'org.springframework.boot' version '2.5.2'
+    id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+    id 'java'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencyManagement {
+    imports { mavenBom("org.springframework.boot:spring-boot-dependencies:2.5.2") }
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter'
+
+    // Ignite
+    // Ignite Uses h2 v1.4.197. So, set it explicitly so that other dependencies don't set it to wrong version.
+    implementation group: 'org.apache.ignite', name: 'ignite-core', version: '2.10.0'
+    implementation group: 'org.apache.ignite', name: 'ignite-spring', version: '2.10.0'
+    implementation group: 'org.apache.ignite', name: 'ignite-kubernetes', version: '2.10.0'
+
+    // Logging
+    implementation 'org.apache.logging.log4j:log4j-api:2.13.3'
+    implementation 'org.apache.logging.log4j:log4j-core:2.13.3'
+
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}

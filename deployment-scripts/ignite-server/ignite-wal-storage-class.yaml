@@ -1,0 +1,10 @@
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: ignite-wal-storage-class  #StorageClass name
+  namespace: ignite #Ignite namespace
+provisioner: kubernetes.io/aws-ebs
+parameters:
+  type: gp2 #Volume type io1, gp2, sc1, st1. Default: gp2
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer

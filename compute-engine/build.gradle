@@ -1,0 +1,87 @@
+import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+import com.bmuschko.gradle.docker.tasks.image.DockerPushImage
+import com.bmuschko.gradle.docker.tasks.image.*
+
+buildscript {
+    ext { springBootVersion = '2.5.2.RELEASE' }
+    repositories {
+        mavenCentral()
+        maven {
+            url "https://plugins.gradle.org/m2"
+        }
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+        classpath("gradle.plugin.com.palantir.gradle.docker:gradle-docker:0.13.0")
+    }
+}
+
+plugins {
+    id 'org.springframework.boot' version '2.5.2'
+    id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+    id 'java'
+    id 'application'
+    id 'com.bmuschko.docker-remote-api' version '6.6.1'
+}
+
+repositories {
+    mavenCentral()
+}
+
+application {
+    startScripts {
+        doLast {
+            unixScript.text = unixScript.text.replaceFirst('\n', '\nmkdir -p /data-sync/jvm-logs;find /data-sync/jvm-logs/ -mtime +2 -delete\n')
+        }
+    }
+    mainClassName = 'com.example.org.application.ComputeEngine'
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter'
+    runtimeOnly("com.h2database:h2:1.4.197")
+    implementation project(path: ':commons', configuration: 'default')
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+gradle.startParameter.showStacktrace = org.gradle.api.logging.configuration.ShowStacktrace.ALWAYS
+
+def imageInEcr = "${project.ecrRegistry}/${project.rootProject.name}"
+
+task copyDockerfile(type: Copy) {
+    group = 'Docker'
+    description = 'Copies Dockerfile into individual sub projects'
+    println("[$project.name] Starting copy $project.projectDir/Dockerfile ...")
+    if (file("$project.projectDir/Dockerfile").exists()) {
+        println("[$project.name] Copying $project.projectDir/Dockerfile ...")
+        from("$project.projectDir/Dockerfile")
+        destinationDir = file("${project.buildDir}")
+    } else {
+        throw new GradleException("Docker Image not available")
+    }
+}
+
+task buildImage(type: DockerBuildImage, dependsOn: [assemble, copyDockerfile]) {
+    group = 'Docker'
+    description = 'Generates the docker image for this project.'
+    inputDir = file("$project.buildDir")
+    images.add("$imageInEcr:${project.name}-$version")
+    buildArgs = [version: version, project: project.name]
+}
+
+task pushImageToEcr(type: DockerPushImage, dependsOn: [buildImage]) {
+    group = 'Docker'
+    description = 'Pushes docker image for this project to the registry.'
+    images.add(imageInEcr)
+}
+
+bootJar {
+    enabled = true
+}
+
+jar.enabled = true
+distZip.enabled = false
+
+bootRun {
+    args = ["--spring.profiles.active=local"]
+}

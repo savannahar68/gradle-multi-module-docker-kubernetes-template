@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: @@CLIENT_ID@@
+  namespace: @@NAMESPACE@@
+  labels:
+    app: @@CLIENT_ID@@
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: @@CLIENT_ID@@
+  template:
+    metadata:
+      labels:
+        app: @@CLIENT_ID@@
+    spec:
+      serviceAccountName: ignite
+      containers:
+        - name: @@CLIENT_ID@@
+          image: ECR_REGISTRY_PATH/gradle-multi-module-docker-kubernetes-template:@@VERSION@@
+          env:
+            - name: CLIENT_ID
+              value: @@CLIENT_NAME@@
+            - name: NAMESPACE
+              value: @@NAMESPACE@@
+            - name: SERVICE_NAME
+              value: @@SERVER_SERVICE_NAME@@
+          command: ["bin/compute-engine"]
+          ports:
+            - containerPort: 8080
+              name: rest
+            - containerPort: 10800
+              name: thinclients
+            - containerPort: 10900
+              name: sql
+            - containerPort: 47500
+              name: discoveryspi
+            - containerPort: 47100
+              name: communication # communication spi
+          resources:
+            requests:
+              memory: "5Gi"
+              cpu: "100m"
+            limits:
+              memory: "5Gi"
+              cpu: "100m"
